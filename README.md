@@ -2,6 +2,10 @@
 
 Very basic and insecure (vulnerable to directory traversal, and probably others) Bash HTTP server.
 
+# Requirements
+
+* `socat`: `sudo apt-get install socat`
+
 # Usage
 
 `./httpd.sh [PORT]`
