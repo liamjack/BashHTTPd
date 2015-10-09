@@ -5,6 +5,7 @@ SERVERTOKEN="BashHTTPd v1.0"
 HTTPVERSION="HTTP/1.1"
 WWWPATH="/tmp/www"
 FOUROFOURFILE="/404.html"
+FOUROTHREEFILE="/403.html"
 
 usage() {
 	echo "Usage: $(basename $0) [PORT]" >&2
@@ -16,7 +17,6 @@ contentLengthHeader() {
 }
 
 fileTypeHeader() {
-	fileType=``
 	echo "Content-Type: $(file -ib $1)"
 }
 
@@ -26,7 +26,7 @@ getHeader() {
 	echo "Connection: close"
 }
 
-getFile() {
+getFile() { 
 	getHeader $1
 	
 	if test "$2" != ""; then
@@ -42,17 +42,30 @@ getFile() {
 get() {
 	file=$WWWPATH$1
 
+	# Check if the request didn't specify a file
 	if test "$1" == "/"; then
+		# No file specified, default to index.html
 		file="$WWWPATH/index.html"
 	fi
 
+	# Check if the file exists
 	if test -e $file; then
+		# Check if the file is a symbolic link
 		if test -h $file; then
+			# File is a symbolic link
 			file="$WWWPATH/$(readlink $file)"
 		fi
-		
-		getFile "$HTTPVERSION 200 OK" $file
+
+		# Check if the file is readable
+		if test -r $file; then
+			# File is readable
+			getFile "$HTTPVERSION 200 OK" $file
+		else
+			# File is not readable: Error 403
+			getFile "$HTTPVERSION 403 FORBIDDEN" "$WWWPATH$FOUROTHREEFILE"
+		fi
 	else
+		# File doesn't exist: Error 404
 		getFile "$HTTPVERSION 404 NOT FOUND" "$WWWPATH$FOUROFOURFILE"
 	fi
 }
