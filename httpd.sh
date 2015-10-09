@@ -7,28 +7,35 @@ WWWPATH="/tmp/www"
 FOUROFOURFILE="/404.html"
 
 usage() {
-	echo "Usage: $(basename $0) port" >&2
+	echo "Usage: $(basename $0) [PORT]" >&2
 	exit 1
 }
 
 contentLengthHeader() {
-	contentLength=`wc -c $1 | cut -d ' ' -f 1`
-	echo "Content-Length: $contentLength"
+	echo "Content-Length: $(wc -c $1 | cut -d ' ' -f 1)"
 }
 
 fileTypeHeader() {
-	fileType=`file -ib $1`
-	echo "Content-Type: $fileType"
+	fileType=``
+	echo "Content-Type: $(file -ib $1)"
 }
 
-getFile() {
+getHeader() {
 	echo $1
 	echo "Server: $SERVERTOKEN"
 	echo "Connection: close"
-	contentLengthHeader $2
-	fileTypeHeader $2
-	echo ""
-	cat $2
+}
+
+getFile() {
+	getHeader $1
+	
+	if test "$2" != ""; then
+		contentLengthHeader $2
+		fileTypeHeader $2
+		echo ""
+		cat $2
+	fi
+	
 	exit 0
 }
 
@@ -40,6 +47,10 @@ get() {
 	fi
 
 	if test -e $file; then
+		if test -h $file; then
+			file="$WWWPATH/$(readlink $file)"
+		fi
+		
 		getFile "$HTTPVERSION 200 OK" $file
 	else
 		getFile "$HTTPVERSION 404 NOT FOUND" "$WWWPATH$FOUROFOURFILE"
@@ -64,25 +75,9 @@ while read line; do
 		GET)
 			get $HttpUri
 			;;
-		POST)
-			;;
-		HEAD)
-			;;
-		POST)
-			;;
-		OPTIONS)
-			;;
-		CONNECT)
-			;;
-		TRACE)
-			;;
-		PUT)
-			;;
-		PATCH)
-			;;
-		DELETE)
-			;;
 		*)
+			getHeader "$HTTPVERSION 501 NOT IMPLEMENTED"
+			exit 0
 			;;
 	esac
 done
